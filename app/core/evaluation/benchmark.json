@@ -1,0 +1,30 @@
+[
+  {
+    "question": "What is supervised learning?",
+    "answer": "Supervised learning is a type of machine learning where the training set includes the desired solutions, called labels. The algorithm learns from labeled examples to classify new data or predict numeric values.",
+    "contexts": [
+      "Supervised learning uses labeled data. Examples include classification (spam filter) and regression (predicting house prices)."
+    ]
+  },
+  {
+    "question": "Explain the bias-variance tradeoff.",
+    "answer": "The bias-variance tradeoff is the balance between underfitting (high bias) and overfitting (high variance). A good model finds the sweet spot with low total error.",
+    "contexts": [
+      "High bias leads to underfitting. High variance leads to overfitting. The goal is to minimize total generalization error."
+    ]
+  },
+  {
+    "question": "What are the main types of machine learning?",
+    "answer": "The three main types are Supervised Learning, Unsupervised Learning, and Reinforcement Learning.",
+    "contexts": [
+      "Supervised: labeled data. Unsupervised: no labels. Reinforcement: reward-based learning."
+    ]
+  },
+  {
+    "question": "Give an example of unsupervised learning.",
+    "answer": "Clustering (e.g., customer segmentation using K-Means) and dimensionality reduction (PCA) are common unsupervised learning tasks.",
+    "contexts": [
+      "Unsupervised learning finds patterns in unlabeled data. Examples: clustering and association rules."
+    ]
+  }
+]

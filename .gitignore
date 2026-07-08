@@ -1,0 +1,58 @@
+# Python Virtual Environments
+myenv/
+venv/
+env/
+.venv/
+ENV/
+
+# Python Cache & Compiled Files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# OS Specific Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*
+.password
+
+# GenAI RAG Specific Files & Databases
+metadata_cache/
+app.zip
+*.db
+*.sqlite3
+.deepeval/
+.junie/
+.cache/
+
+# Ignore raw ingestion files/documents in knowledge_base (except .gitkeep)
+knowledge_base/*
+!knowledge_base/.gitkeep
+
+# Ignore datasets in evaluation_datasets (except .gitkeep)
+evaluation_datasets/*
+!evaluation_datasets/.gitkeep
+
+# Build and Distribution
+build/
+dist/
+*.egg-info/
