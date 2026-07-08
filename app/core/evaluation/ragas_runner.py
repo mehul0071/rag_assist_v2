@@ -3,6 +3,9 @@ from ragas.metrics import faithfulness, answer_relevancy, context_precision
 from datasets import Dataset
 from typing import List, Dict
 import statistics
+from langchain_groq import ChatGroq
+from langchain_huggingface import HuggingFaceEmbeddings
+from app.config.settings import settings
 
 
 async def run_ragas_evaluation(examples: List[Dict]) -> Dict:
@@ -11,9 +14,18 @@ async def run_ragas_evaluation(examples: List[Dict]) -> Dict:
 
     dataset = Dataset.from_list(examples)
 
+    eval_llm = ChatGroq(
+        model=settings.LLM_MODEL,
+        api_key=settings.GROQ_API_KEY,
+        temperature=0.0
+    )
+    eval_embeddings = HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL)
+
     result = evaluate(
         dataset,
-        metrics=[faithfulness, answer_relevancy, context_precision]
+        metrics=[faithfulness, answer_relevancy, context_precision],
+        llm=eval_llm,
+        embeddings=eval_embeddings
     )
 
     scores = result.scores

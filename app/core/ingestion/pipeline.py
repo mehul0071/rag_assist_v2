@@ -31,11 +31,8 @@ class IngestionPipeline:
         print(f"============1=========")
         parent_docs, child_docs = self.splitter.split_parent_child_documents(enriched_docs)
         
-        parent_id_pairs = [(str(i), doc) for i, doc in enumerate(parent_docs)]
+        parent_id_pairs = [(doc.metadata["doc_id"], doc) for doc in parent_docs]
         await self.document_store.mset(parent_id_pairs)
-        
-        for i, child in enumerate(child_docs):
-            child.metadata["parent_id"] = str(i // 2)
         
         await self.vector_store.add_documents(child_docs)
         

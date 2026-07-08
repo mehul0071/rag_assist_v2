@@ -27,7 +27,7 @@ class ConversationRepository:
         )
         conv = result.scalars().all()
         print(f"============conv==================={conv}")
-        return result.scalars().all()
+        return conv
 
 
     async def get_messages(self, conversation_id: UUID, limit: int = 10) -> List[Message]:

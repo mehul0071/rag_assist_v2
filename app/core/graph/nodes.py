@@ -2,6 +2,8 @@ from langchain_core.messages import HumanMessage
 from app.core.graph.state import GraphState
 import logging
 from datetime import datetime
+import time
+from app.core.observability.metrics import retrieval_latency, llm_latency, tokens_input, tokens_output
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +41,11 @@ async def retrieve_node(state: GraphState, service) -> GraphState:
     """Uses RetrievalPipeline (Rewrite → Retrieve → Rerank)"""
     try:
         logger.info(f"[DEBUG] Using RetrievalPipeline: {type(service.retrieval_pipeline)}")
+        start_time = time.perf_counter()
         docs = await service.retrieval_pipeline.search(state["question"])
-        logger.info(f"[DEBUG] Retrieved {len(docs)} documents")
+        duration = time.perf_counter() - start_time
+        retrieval_latency.observe(duration)
+        logger.info(f"[DEBUG] Retrieved {len(docs)} documents in {duration:.4f}s")
         
         return {
             **state,
@@ -75,9 +80,18 @@ async def generate_node(state: GraphState, service) -> GraphState:
                 question=state["question"]
             )
             sources = context_data.get("sources", [])
+            logger.info(f"[DEBUG] ContextBuilder used. Tokens estimated: {context_data.get('estimated_tokens')}")
 
+        start_time = time.perf_counter()
         answer = await service.llm_service.generate_text([HumanMessage(content=prompt)])
-        logger.info(f"[DEBUG] ContextBuilder used. Tokens estimated: {context_data.get('estimated_tokens')}")
+        duration = time.perf_counter() - start_time
+        llm_latency.observe(duration)
+        logger.info(f"[DEBUG] LLM generated text in {duration:.4f}s")
+
+        input_tok = service.context_builder.token_manager.count_tokens(prompt)
+        output_tok = service.context_builder.token_manager.count_tokens(answer)
+        tokens_input.inc(input_tok)
+        tokens_output.inc(output_tok)
 
         return {
             **state,

@@ -6,7 +6,7 @@ from app.config.settings import settings
 
 
 class LLMService:
-\
+
     def __init__(self, model: Optional[BaseChatModel] = None):
         self.llm = model or ChatGroq(
             model=settings.LLM_MODEL,

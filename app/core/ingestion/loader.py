@@ -16,9 +16,10 @@ class DocumentLoader:
             DirectoryLoader(folder_path, glob="**/*.md", loader_cls=TextLoader, show_progress=True),
         ]
 
+        import asyncio
         for loader in loaders:
             try:
-                docs = loader.load()
+                docs = await asyncio.to_thread(loader.load)
                 documents.extend(docs)
             except Exception as e:
                 print(f"Error loading with {loader}: {e}")
