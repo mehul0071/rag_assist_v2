@@ -1,3 +1,4 @@
+import tiktoken
 from typing import List
 from langchain_core.documents import Document
 from app.config.llm import llm_config
@@ -21,13 +22,15 @@ class TokenBudgetManager:
         if self.max_input_tokens <= 0:
             raise ValueError("Invalid token budget configuration.")
 
+        try:
+            self.encoder = tiktoken.encoding_for_model(self.model_spec.name)
+        except KeyError:
+            self.encoder = tiktoken.get_encoding("cl100k_base")
 
     def count_tokens(self, text: str) -> int:
         if not text:
             return 0
-
-        return len(text) // 4 + 25
-
+        return len(self.encoder.encode(text, disallowed_special=()))
 
     def select_documents(
         self,

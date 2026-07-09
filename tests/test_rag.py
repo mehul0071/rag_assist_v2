@@ -77,3 +77,70 @@ async def test_rag_query_knowledge(mock_db):
     assert result["retrieved_count"] == 1
     assert len(result["sources"]) == 1
     assert result["sources"][0]["title"] == "ML Basics"
+
+
+def test_reciprocal_rank_fusion():
+    retriever = AdvancedRetriever(vector_store=MagicMock(), document_store=MagicMock(), reranker=MagicMock())
+    
+    doc1 = Document(page_content="Apple is a fruit", metadata={"source": "fruit.txt", "title": "Apple"})
+    doc2 = Document(page_content="Banana is yellow", metadata={"source": "fruit.txt", "title": "Banana"})
+    doc3 = Document(page_content="Orange is orange", metadata={"source": "fruit.txt", "title": "Orange"})
+    
+    dense_results = [doc1, doc2]
+    sparse_results = [doc3, doc1]
+    
+    fused = retriever._reciprocal_rank_fusion(dense_results, sparse_results, rrf_k=60, limit=3)
+    
+    assert len(fused) == 3
+    assert fused[0].page_content == "Apple is a fruit"
+    assert fused[1].page_content == "Orange is orange"
+    assert fused[2].page_content == "Banana is yellow"
+
+
+def test_token_budget_manager():
+    from app.core.retrieval.token_budget import TokenBudgetManager
+    budget_manager = TokenBudgetManager(model_name="llama-3.3-70b-versatile")
+    text = "Hello world!"
+    tokens = budget_manager.count_tokens(text)
+    assert tokens > 0
+    
+    docs = [
+        Document(page_content="This is the first document."),
+        Document(page_content="This is the second document.")
+    ]
+    selected, total = budget_manager.select_documents(query="test", docs=docs, chat_history="")
+    assert len(selected) == 2
+
+
+@pytest.mark.asyncio
+async def test_document_store_database():
+    from app.core.storage.document_store import DocumentStore
+    from unittest.mock import patch, AsyncMock
+    
+    mock_session = AsyncMock()
+    mock_session.merge = AsyncMock()
+    mock_session.commit = AsyncMock()
+    
+    mock_parent = MagicMock()
+    mock_parent.id = "doc_1"
+    mock_parent.page_content = "Parent page content"
+    mock_parent.metadata_json = {"title": "Doc Title"}
+    
+    mock_result = MagicMock()
+    mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[mock_parent])))
+    mock_session.execute = AsyncMock(return_value=mock_result)
+    
+    with patch("app.core.storage.document_store.AsyncSessionLocal") as mock_session_local:
+        mock_session_local.return_value.__aenter__.return_value = mock_session
+        
+        store = DocumentStore(store_type="database")
+        
+        doc = Document(page_content="Parent page content", metadata={"title": "Doc Title"})
+        await store.mset([("doc_1", doc)])
+        mock_session.merge.assert_called_once()
+        mock_session.commit.assert_called_once()
+        
+        results = await store.mget(["doc_1"])
+        assert len(results) == 1
+        assert results[0].page_content == "Parent page content"
+        assert results[0].metadata["title"] == "Doc Title"

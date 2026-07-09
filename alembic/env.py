@@ -1,27 +1,23 @@
 import asyncio
 from logging.config import fileConfig
-
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
 from alembic import context
 
-# Import your Base and models
 from app.config.settings import settings
-from app.core.database import Base   # Make sure this points to your Base
-from app.models.conversations import Conversation   # Import all models
+from app.core.database import Base
+from app.models.conversations import Conversation
 from app.models.messages import Message
+from app.models.parent_documents import ParentDocument
 
-# ================== Config ==================
 config = context.config
-config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))   # Ensure it's string
+config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
-# ================== Migration Functions ==================
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
     context.configure(

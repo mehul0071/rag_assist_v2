@@ -46,6 +46,7 @@ app.zip
 
 # Ignore raw ingestion files/documents in knowledge_base (except .gitkeep)
 knowledge_base/*
+changes/*
 !knowledge_base/.gitkeep
 
 # Ignore datasets in evaluation_datasets (except .gitkeep)
