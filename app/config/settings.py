@@ -42,8 +42,11 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # Reranker Settings
+    RERANKER_PROVIDER: str = "local"
     RERANKER_MODEL: str = "BAAI/bge-reranker-base"
     RERANK_TOP_K: int = 5
+    COHERE_API_KEY: str | None = None
+    TEI_API_URL: str | None = None
 
     ENABLE_QUERY_REWRITE: bool = True
 

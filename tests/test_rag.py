@@ -144,3 +144,72 @@ async def test_document_store_database():
         assert len(results) == 1
         assert results[0].page_content == "Parent page content"
         assert results[0].metadata["title"] == "Doc Title"
+
+
+@pytest.mark.asyncio
+async def test_reranker_cohere_and_tei():
+    from app.core.retrieval.reranker import BGEReranker
+    from unittest.mock import patch, MagicMock
+    import httpx
+    
+    # 1. Test Cohere Rerank API Mocking
+    with patch("app.core.retrieval.reranker.settings") as mock_settings:
+        mock_settings.RERANKER_PROVIDER = "cohere"
+        mock_settings.COHERE_API_KEY = "mock_cohere_key"
+        mock_settings.RERANK_TOP_K = 2
+        
+        reranker = BGEReranker()
+        
+        docs = [
+            Document(page_content="Apple is a fruit", metadata={}),
+            Document(page_content="Banana is yellow", metadata={})
+        ]
+        
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json = MagicMock(return_value={
+            "results": [
+                {"index": 1, "relevance_score": 0.99},
+                {"index": 0, "relevance_score": 0.85}
+            ]
+        })
+        
+        with patch("httpx.AsyncClient.post", return_value=mock_response) as mock_post:
+            reranked = await reranker.rerank("query text", docs)
+            
+            assert len(reranked) == 2
+            assert reranked[0].page_content == "Banana is yellow"
+            assert reranked[0].metadata["rerank_score"] == 0.99
+            assert reranked[1].page_content == "Apple is a fruit"
+            assert reranked[1].metadata["rerank_score"] == 0.85
+            mock_post.assert_called_once()
+            
+    # 2. Test TEI Rerank API Mocking
+    with patch("app.core.retrieval.reranker.settings") as mock_settings:
+        mock_settings.RERANKER_PROVIDER = "tei"
+        mock_settings.TEI_API_URL = "http://tei-server.local"
+        mock_settings.RERANK_TOP_K = 2
+        
+        reranker = BGEReranker()
+        
+        docs = [
+            Document(page_content="Apple is a fruit", metadata={}),
+            Document(page_content="Banana is yellow", metadata={})
+        ]
+        
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json = MagicMock(return_value=[
+            {"index": 0, "score": 0.95},
+            {"index": 1, "score": 0.70}
+        ])
+        
+        with patch("httpx.AsyncClient.post", return_value=mock_response) as mock_post:
+            reranked = await reranker.rerank("query text", docs)
+            
+            assert len(reranked) == 2
+            assert reranked[0].page_content == "Apple is a fruit"
+            assert reranked[0].metadata["rerank_score"] == 0.95
+            assert reranked[1].page_content == "Banana is yellow"
+            assert reranked[1].metadata["rerank_score"] == 0.70
+            mock_post.assert_called_once()
