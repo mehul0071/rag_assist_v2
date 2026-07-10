@@ -58,3 +58,12 @@ class ConversationRepository:
         await self.db.commit()
         await self.db.refresh(message)
         return message
+
+
+    async def update_summary(self, conversation_id: UUID, summary: str):
+        conversation = await self.get_conversation(conversation_id)
+        if conversation:
+            conversation.summary = summary
+            await self.db.commit()
+            await self.db.refresh(conversation)
+        return conversation

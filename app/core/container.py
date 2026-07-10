@@ -10,6 +10,7 @@ from app.services.rag_service import RAGService
 from app.services.conversation_service import ConversationService
 from app.core.conversation.repository import ConversationRepository
 from app.core.database import get_db
+from app.core.memory.manager import MemoryManager
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
@@ -23,6 +24,7 @@ class Container:
         self._retriever = None
         self._ingestion_pipeline = None
         self._rag_service = None
+        self._memory_manager = None
 
     @property
     def vector_store(self) -> VectorStore:
@@ -68,13 +70,20 @@ class Container:
         return self._context_builder
 
     @property
+    def memory_manager(self) -> MemoryManager:
+        if self._memory_manager is None:
+            self._memory_manager = MemoryManager()
+        return self._memory_manager
+
+    @property
     def rag_service(self) -> RAGService:
         if self._rag_service is None:
             self._rag_service = RAGService(
                 retriever=self.retriever,
                 ingestion_pipeline=self.ingestion_pipeline,
                 conversation_service=self.get_conversation_service(),
-                context_builder=self.context_builder
+                context_builder=self.context_builder,
+                memory_manager=self.memory_manager
             )
         return self._rag_service
     

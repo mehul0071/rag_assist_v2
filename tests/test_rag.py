@@ -213,3 +213,61 @@ async def test_reranker_cohere_and_tei():
             assert reranked[1].page_content == "Banana is yellow"
             assert reranked[1].metadata["rerank_score"] == 0.70
             mock_post.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_memory_manager_summarization():
+    from app.core.memory.manager import MemoryManager
+    from app.core.memory.summary import ConversationSummarizer
+    from app.services.conversation_service import ConversationService
+    from unittest.mock import patch, AsyncMock, MagicMock
+    from uuid import uuid4
+    from app.config.settings import settings
+    
+    mock_summarizer = AsyncMock(spec=ConversationSummarizer)
+    mock_summarizer.summarize = AsyncMock(return_value="Updated summary of the chat.")
+    
+    mock_token_budget = MagicMock()
+    mock_token_budget.count_tokens = MagicMock(return_value=settings.MAX_HISTORY_TOKENS + 100)
+    
+    mock_repo = MagicMock()
+    
+    mock_messages = []
+    for i in range(6):
+        m = MagicMock()
+        m.id = uuid4()
+        m.role = "user" if i % 2 == 0 else "assistant"
+        m.content = f"Message {i}"
+        mock_messages.append(m)
+        
+    mock_repo.get_messages = AsyncMock(return_value=mock_messages)
+    mock_repo.update_summary = AsyncMock()
+    mock_repo.get_conversation = AsyncMock()
+    mock_repo.db = AsyncMock()
+    mock_repo.db.execute = AsyncMock()
+    mock_repo.db.commit = AsyncMock()
+    
+    conv_service = ConversationService(repository=mock_repo)
+    conv_service.get_summary = AsyncMock(return_value="Old summary.")
+    conv_service.update_summary = AsyncMock()
+    
+    manager = MemoryManager(summarizer=mock_summarizer, token_budget=mock_token_budget)
+    
+    conversation_id = uuid4()
+    formatted_history = await manager.get_history_with_summary(conversation_id, conv_service)
+    
+    mock_summarizer.summarize.assert_called_once()
+    args, kwargs = mock_summarizer.summarize.call_args
+    assert args[0] == "Old summary."
+    assert len(args[1]) == 2
+    
+    mock_repo.db.execute.assert_called_once()
+    mock_repo.db.commit.assert_called_once()
+    
+    conv_service.update_summary.assert_called_once_with(conversation_id, "Updated summary of the chat.")
+    
+    assert "System: Summary of the conversation so far: Updated summary of the chat." in formatted_history
+    assert "User: Message 2" in formatted_history
+    assert "Assistant: Message 3" in formatted_history
+    assert "User: Message 4" in formatted_history
+    assert "Assistant: Message 5" in formatted_history

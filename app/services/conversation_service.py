@@ -49,3 +49,12 @@ class ConversationService:
             return ""
         history = [f"{m['role'].capitalize()}: {m['content']}" for m in messages]
         return "\n\n".join(history)
+
+
+    async def update_summary(self, conversation_id: UUID, summary: str):
+        await self.repository.update_summary(conversation_id, summary)
+
+
+    async def get_summary(self, conversation_id: UUID) -> Optional[str]:
+        conv = await self.repository.get_conversation(conversation_id)
+        return conv.summary if conv else None

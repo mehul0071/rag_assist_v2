@@ -11,6 +11,7 @@ from app.core.prompts.prompt_manager import PromptManager
 from app.services.llm_service import LLMService
 from app.core.graph.graph import create_rag_graph
 from app.core.observability.metrics import rag_requests_total, rag_latency
+from app.core.memory.manager import MemoryManager
 
 
 class RAGService:
@@ -23,7 +24,8 @@ class RAGService:
         context_builder: Optional[ContextBuilder] = None,
         prompt_manager: Optional[PromptManager] = None,
         llm_service: Optional[LLMService] = None,
-        retrieval_pipeline: Optional[RetrievalPipeline] = None
+        retrieval_pipeline: Optional[RetrievalPipeline] = None,
+        memory_manager: Optional[Any] = None
     ):
         self.retriever = retriever
         self.ingestion_pipeline = ingestion_pipeline
@@ -32,6 +34,7 @@ class RAGService:
         self.context_builder = context_builder or ContextBuilder()
         self.prompt_manager = prompt_manager or PromptManager()
         self.llm_service = llm_service or LLMService()
+        self.memory_manager = memory_manager or MemoryManager()
         self.graph = create_rag_graph(self)
 
 
@@ -54,8 +57,9 @@ class RAGService:
 
         chat_history_text = ""
         if conversation_id:
-            history = await conversation_service.get_history(UUID(conversation_id))
-            chat_history_text = conversation_service.get_history_text(history)
+            chat_history_text = await self.memory_manager.get_history_with_summary(
+                UUID(conversation_id), conversation_service
+            )
 
         result = await self.graph.ainvoke({
             "question": question,
@@ -102,8 +106,9 @@ class RAGService:
 
         chat_history_text = ""
         if conversation_id:
-            history = await conversation_service.get_history(UUID(conversation_id))
-            chat_history_text = conversation_service.get_history_text(history)
+            chat_history_text = await self.memory_manager.get_history_with_summary(
+                UUID(conversation_id), conversation_service
+            )
 
         retrieved_docs = await self.retrieval_pipeline.search(question)
 
