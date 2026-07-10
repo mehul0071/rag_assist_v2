@@ -25,7 +25,8 @@ class RAGService:
         prompt_manager: Optional[PromptManager] = None,
         llm_service: Optional[LLMService] = None,
         retrieval_pipeline: Optional[RetrievalPipeline] = None,
-        memory_manager: Optional[Any] = None
+        memory_manager: Optional[Any] = None,
+        planner: Optional[Any] = None
     ):
         self.retriever = retriever
         self.ingestion_pipeline = ingestion_pipeline
@@ -35,6 +36,8 @@ class RAGService:
         self.prompt_manager = prompt_manager or PromptManager()
         self.llm_service = llm_service or LLMService()
         self.memory_manager = memory_manager or MemoryManager()
+        from app.core.planner.planner import AdvancedPlanner
+        self.planner = planner or AdvancedPlanner(llm_service=self.llm_service)
         self.graph = create_rag_graph(self)
 
 

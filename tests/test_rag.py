@@ -20,10 +20,16 @@ def mock_db():
 
 @pytest.mark.asyncio
 async def test_rag_query_greeting(mock_db):
+    from app.core.planner.planner import QueryPlan
+    
     retrieval_pipeline = MagicMock()
     retrieval_pipeline.search = AsyncMock(return_value=[])
 
+    mock_router = AsyncMock()
+    mock_router.ainvoke = AsyncMock(return_value=QueryPlan(intent="greeting"))
+    
     llm_service = MagicMock()
+    llm_service.llm.with_structured_output = MagicMock(return_value=mock_router)
     llm_service.generate_text = AsyncMock(return_value="Hello! How can I help you today?")
 
     retriever = MagicMock(spec=AdvancedRetriever)
@@ -48,13 +54,42 @@ async def test_rag_query_greeting(mock_db):
 
 @pytest.mark.asyncio
 async def test_rag_query_knowledge(mock_db):
+    from app.core.planner.planner import QueryPlan
+    from app.core.graph.nodes import GradeDocument, GradeHallucination, GradeAnswer
+    
     mock_docs = [
         Document(page_content="Supervised learning is label-based.", metadata={"title": "ML Basics", "source": "doc1.txt"})
     ]
     retrieval_pipeline = MagicMock()
     retrieval_pipeline.search = AsyncMock(return_value=mock_docs)
 
+    mock_router = AsyncMock()
+    mock_router.ainvoke = AsyncMock(return_value=QueryPlan(intent="retrieval"))
+    
+    mock_doc_grader = AsyncMock()
+    mock_doc_grader.ainvoke = AsyncMock(return_value=GradeDocument(binary_score="yes"))
+    
+    mock_hallucination_grader = AsyncMock()
+    mock_hallucination_grader.ainvoke = AsyncMock(return_value=GradeHallucination(binary_score="yes"))
+    
+    mock_utility_grader = AsyncMock()
+    mock_utility_grader.ainvoke = AsyncMock(return_value=GradeAnswer(binary_score="yes"))
+
+    mock_llm = MagicMock()
+    def side_effect(schema):
+        if schema == QueryPlan:
+            return mock_router
+        elif schema == GradeDocument:
+            return mock_doc_grader
+        elif schema == GradeHallucination:
+            return mock_hallucination_grader
+        elif schema == GradeAnswer:
+            return mock_utility_grader
+        return MagicMock()
+    mock_llm.with_structured_output = MagicMock(side_effect=side_effect)
+
     llm_service = MagicMock()
+    llm_service.llm = mock_llm
     llm_service.generate_text = AsyncMock(return_value="Supervised learning uses labels.")
 
     retriever = MagicMock(spec=AdvancedRetriever)
@@ -271,3 +306,78 @@ async def test_memory_manager_summarization():
     assert "Assistant: Message 3" in formatted_history
     assert "User: Message 4" in formatted_history
     assert "Assistant: Message 5" in formatted_history
+
+
+@pytest.mark.asyncio
+async def test_rag_graph_cyclic_loops(mock_db):
+    from unittest.mock import AsyncMock, MagicMock
+    from app.core.planner.planner import QueryPlan
+    from app.core.graph.nodes import GradeDocument, GradeHallucination, GradeAnswer
+    from langchain_core.documents import Document
+    from uuid import uuid4
+    
+    mock_router_res = QueryPlan(intent="retrieval")
+    
+    mock_doc_grader_fail = GradeDocument(binary_score="no")
+    mock_doc_grader_pass = GradeDocument(binary_score="yes")
+    
+    mock_gen_grader_fail = GradeHallucination(binary_score="no")
+    mock_gen_grader_pass = GradeHallucination(binary_score="yes")
+    
+    mock_answer_grader_pass = GradeAnswer(binary_score="yes")
+    
+    mock_router = AsyncMock()
+    mock_router.ainvoke = AsyncMock(return_value=mock_router_res)
+    
+    mock_doc_grader = AsyncMock()
+    mock_doc_grader.ainvoke = AsyncMock(side_effect=[mock_doc_grader_fail, mock_doc_grader_pass])
+    
+    mock_hallucination_grader = AsyncMock()
+    mock_hallucination_grader.ainvoke = AsyncMock(side_effect=[mock_gen_grader_fail, mock_gen_grader_pass])
+    
+    mock_utility_grader = AsyncMock()
+    mock_utility_grader.ainvoke = AsyncMock(return_value=mock_answer_grader_pass)
+    
+    mock_llm = MagicMock()
+    def side_effect_structured(schema):
+        if schema == QueryPlan:
+            return mock_router
+        elif schema == GradeDocument:
+            return mock_doc_grader
+        elif schema == GradeHallucination:
+            return mock_hallucination_grader
+        elif schema == GradeAnswer:
+            return mock_utility_grader
+        return MagicMock()
+        
+    mock_llm.with_structured_output = MagicMock(side_effect=side_effect_structured)
+    
+    llm_service = MagicMock()
+    llm_service.llm = mock_llm
+    llm_service.generate_text = AsyncMock(return_value="The final grounded answer.")
+    
+    retrieval_pipeline = MagicMock()
+    retrieval_pipeline.search = AsyncMock(return_value=[Document(page_content="ML facts", metadata={"source": "facts"})])
+    
+    mock_rewriter = AsyncMock()
+    mock_rewriter.rewrite = AsyncMock(return_value="Rewritten query text")
+    retrieval_pipeline.rewriter = mock_rewriter
+    
+    retriever = MagicMock(spec=AdvancedRetriever)
+    ingestion_pipeline = MagicMock(spec=IngestionPipeline)
+    
+    rag_service = RAGService(
+        retriever=retriever,
+        ingestion_pipeline=ingestion_pipeline,
+        llm_service=llm_service,
+        retrieval_pipeline=retrieval_pipeline
+    )
+    
+    result = await rag_service.query(
+        question="What is ML?",
+        db=mock_db,
+        conversation_id=str(uuid4())
+    )
+    
+    assert result["answer"] == "The final grounded answer."
+    assert mock_rewriter.rewrite.call_count == 2

@@ -11,6 +11,7 @@ from app.services.conversation_service import ConversationService
 from app.core.conversation.repository import ConversationRepository
 from app.core.database import get_db
 from app.core.memory.manager import MemoryManager
+from app.core.planner.planner import AdvancedPlanner
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
@@ -25,6 +26,7 @@ class Container:
         self._ingestion_pipeline = None
         self._rag_service = None
         self._memory_manager = None
+        self._planner = None
 
     @property
     def vector_store(self) -> VectorStore:
@@ -76,6 +78,12 @@ class Container:
         return self._memory_manager
 
     @property
+    def planner(self) -> AdvancedPlanner:
+        if self._planner is None:
+            self._planner = AdvancedPlanner()
+        return self._planner
+
+    @property
     def rag_service(self) -> RAGService:
         if self._rag_service is None:
             self._rag_service = RAGService(
@@ -83,7 +91,8 @@ class Container:
                 ingestion_pipeline=self.ingestion_pipeline,
                 conversation_service=self.get_conversation_service(),
                 context_builder=self.context_builder,
-                memory_manager=self.memory_manager
+                memory_manager=self.memory_manager,
+                planner=self.planner
             )
         return self._rag_service
     

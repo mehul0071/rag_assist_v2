@@ -12,4 +12,6 @@ class GraphState(TypedDict):
     sources: List[Dict]
     metadata: Dict[str, Any]
     error: Optional[str]
+    rewrite_count: int
+    generation_count: int
 
