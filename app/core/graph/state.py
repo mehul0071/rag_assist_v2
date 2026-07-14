@@ -6,6 +6,7 @@ class GraphState(TypedDict):
     question: str
     conversation_id: Optional[str]
     chat_history: str
+    user_facts: str
     intent: str
     retrieved_docs: List[Document]
     answer: Optional[str]

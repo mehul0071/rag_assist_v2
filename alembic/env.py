@@ -9,6 +9,7 @@ from app.core.database import Base
 from app.models.conversations import Conversation
 from app.models.messages import Message
 from app.models.parent_documents import ParentDocument
+from app.models.user_facts import UserFact
 
 config = context.config
 config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))

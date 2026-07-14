@@ -5,6 +5,8 @@ from sqlalchemy import delete
 from app.config.settings import settings
 from app.models.messages import Message
 from app.core.memory.summary import ConversationSummarizer
+from app.core.memory.user_facts import UserFactManager
+from app.core.memory.recent import RecentMemoryManager
 from app.services.conversation_service import ConversationService
 from app.core.retrieval.token_budget import TokenBudgetManager
 
@@ -13,9 +15,17 @@ logger = logging.getLogger(__name__)
 
 class MemoryManager:
 
-    def __init__(self, summarizer: Optional[ConversationSummarizer] = None, token_budget: Optional[TokenBudgetManager] = None):
+    def __init__(
+        self,
+        summarizer: Optional[ConversationSummarizer] = None,
+        token_budget: Optional[TokenBudgetManager] = None,
+        user_facts: Optional[UserFactManager] = None,
+        recent: Optional[RecentMemoryManager] = None
+    ):
         self.summarizer = summarizer or ConversationSummarizer()
         self.token_budget = token_budget or TokenBudgetManager()
+        self.user_facts = user_facts or UserFactManager()
+        self.recent = recent or RecentMemoryManager()
 
 
     async def get_history_with_summary(

@@ -59,15 +59,20 @@ class RAGService:
         conversation_service = ConversationService(repository=conversation_repo)
 
         chat_history_text = ""
+        user_facts_text = "No profile details or preferences recorded yet."
         if conversation_id:
             chat_history_text = await self.memory_manager.get_history_with_summary(
                 UUID(conversation_id), conversation_service
+            )
+            user_facts_text = await self.memory_manager.user_facts.get_user_facts_text(
+                UUID(conversation_id), db
             )
 
         result = await self.graph.ainvoke({
             "question": question,
             "conversation_id": conversation_id,
             "chat_history": chat_history_text,
+            "user_facts": user_facts_text,
             "intent": "knowledge",
             "retrieved_docs": [],
             "answer": None,
@@ -81,6 +86,13 @@ class RAGService:
             )
             await conversation_service.add_message(
                 UUID(conversation_id), "assistant", result.get("answer", "")
+            )
+            new_turn = [
+                {"role": "user", "content": question},
+                {"role": "assistant", "content": result.get("answer", "")}
+            ]
+            await self.memory_manager.user_facts.extract_and_update_facts(
+                UUID(conversation_id), db, new_turn
             )
 
         duration = time.perf_counter() - start_time
@@ -108,9 +120,13 @@ class RAGService:
         conversation_service = ConversationService(repository=conversation_repo)
 
         chat_history_text = ""
+        user_facts_text = "No profile details or preferences recorded yet."
         if conversation_id:
             chat_history_text = await self.memory_manager.get_history_with_summary(
                 UUID(conversation_id), conversation_service
+            )
+            user_facts_text = await self.memory_manager.user_facts.get_user_facts_text(
+                UUID(conversation_id), db
             )
 
         retrieved_docs = await self.retrieval_pipeline.search(question)
@@ -124,6 +140,7 @@ class RAGService:
         prompt_template = self.prompt_manager.get_rag_prompt()
         prompt_value = prompt_template.format(
             chat_history=chat_history_text,
+            user_facts=user_facts_text,
             context=context_data.get("formatted_context", ""),
             question=question
         )
@@ -145,6 +162,13 @@ class RAGService:
         if conversation_id:
             await conversation_service.add_message(
                 UUID(conversation_id), "assistant", full_answer
+            )
+            new_turn = [
+                {"role": "user", "content": question},
+                {"role": "assistant", "content": full_answer}
+            ]
+            await self.memory_manager.user_facts.extract_and_update_facts(
+                UUID(conversation_id), db, new_turn
             )
 
         duration = time.perf_counter() - start_time

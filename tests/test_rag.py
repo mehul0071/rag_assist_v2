@@ -381,3 +381,87 @@ async def test_rag_graph_cyclic_loops(mock_db):
     
     assert result["answer"] == "The final grounded answer."
     assert mock_rewriter.rewrite.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_recent_memory_manager():
+    from app.core.memory.recent import RecentMemoryManager
+    
+    mock_messages = []
+    for i in range(3):
+        m = MagicMock()
+        m.id = f"msg_{i}"
+        m.role = "user" if i % 2 == 0 else "assistant"
+        m.content = f"Content {i}"
+        mock_messages.append(m)
+        
+    mock_repo = MagicMock()
+    mock_repo.get_messages = AsyncMock(return_value=mock_messages)
+    
+    mock_service = MagicMock()
+    mock_service.repository = mock_repo
+    mock_service.get_history_text = MagicMock(return_value="User: Content 0\nAssistant: Content 1\nUser: Content 2")
+    
+    recent_mgr = RecentMemoryManager()
+    
+    recent = await recent_mgr.get_recent_messages("conv_id", mock_service, limit=3)
+    assert len(recent) == 3
+    assert recent[0]["content"] == "Content 0"
+    
+    context = await recent_mgr.get_recent_context_text("conv_id", mock_service, limit=3)
+    assert "Content 0" in context
+    assert mock_repo.get_messages.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_user_facts_manager():
+    from app.core.memory.user_facts import UserFactManager, FactUpdate
+    from app.models.user_facts import UserFact
+    from uuid import uuid4
+    
+    mock_llm = MagicMock()
+    mock_router = AsyncMock()
+    
+    # Set up FactUpdate return value
+    fact_id_to_delete = str(uuid4())
+    mock_router.ainvoke = AsyncMock(return_value=FactUpdate(
+        new_facts=["User prefers Python coding"],
+        contradicted_ids=[fact_id_to_delete]
+    ))
+    mock_llm.with_structured_output = MagicMock(return_value=mock_router)
+    
+    llm_service = MagicMock()
+    llm_service.llm = mock_llm
+    
+    fact_mgr = UserFactManager(llm_service=llm_service)
+    
+    # Test DB interactions (use MagicMock with AsyncMock for async methods to avoid warnings on sync .add())
+    mock_db = MagicMock()
+    mock_db.execute = AsyncMock()
+    mock_db.commit = AsyncMock()
+    mock_db.add = MagicMock()
+    
+    # Mocking select statement execution
+    mock_existing_fact = UserFact(id=fact_id_to_delete, fact="User prefers JavaScript coding")
+    mock_result = MagicMock()
+    mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[mock_existing_fact])))
+    mock_db.execute.side_effect = [mock_result, MagicMock(), mock_result]
+    
+    conv_id = uuid4()
+    new_turn = [{"role": "user", "content": "I prefer Python now."}]
+    
+    await fact_mgr.extract_and_update_facts(conv_id, mock_db, new_turn)
+    
+    # Check that LLM structured output was set up and run
+    mock_llm.with_structured_output.assert_called_once_with(FactUpdate)
+    mock_router.ainvoke.assert_called_once()
+    
+    # Check database calls: 1 select, 1 delete, 1 commit, 1 add
+    assert mock_db.execute.call_count == 2  # 1 select + 1 delete
+    mock_db.add.assert_called_once()
+    mock_db.commit.assert_called_once()
+    
+    # Check details text formatting
+    facts_text = await fact_mgr.get_user_facts_text(conv_id, mock_db)
+    assert "- User prefers JavaScript coding" in facts_text
+

@@ -39,7 +39,6 @@ async def planner_node(state: GraphState, service) -> GraphState:
         rewrite_count = state.get("rewrite_count", 0)
         generation_count = state.get("generation_count", 0)
 
-        # Call the AdvancedPlanner from the container (passed as service)
         plan = await service.planner.plan_query(
             query=state["question"], 
             chat_history=state.get("chat_history", "")
@@ -209,6 +208,7 @@ async def generate_node(state: GraphState, service) -> GraphState:
             prompt_template = service.prompt_manager.get_rag_prompt()
             prompt = prompt_template.format(
                 chat_history=state.get("chat_history", ""),
+                user_facts=state.get("user_facts", "No profile details or preferences recorded yet."),
                 context=context_data.get("formatted_context", ""),
                 question=state["question"]
             )
