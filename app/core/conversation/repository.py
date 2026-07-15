@@ -2,6 +2,7 @@ from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.models.conversations import Conversation
 from app.models.messages import Message
 
@@ -23,10 +24,27 @@ class ConversationRepository:
     async def get_all_conversations(self):
         result = await self.db.execute(
             select(Conversation)
+            .options(selectinload(Conversation.messages))
             .order_by(Conversation.created_at)
         )
         conv = result.scalars().all()
         
+        for c in conv:
+            if not c.title:
+                user_msgs = [m.content for m in c.messages if m.role == "user"]
+                if user_msgs:
+                    first_query = user_msgs[0]
+                    words = first_query.split()
+                    c.title = " ".join(words[:4]) + ("..." if len(words) > 4 else "")
+                else:
+                    c.title = "New Conversation"
+                    
+            if not c.summary:
+                c.summary = "No summary available yet."
+                
+            if c.updated_at is None:
+                c.updated_at = c.created_at
+                
         conv_dicts = [c.__dict__ for c in conv]
         print(f"============conv==================={conv_dicts}")
         
@@ -79,3 +97,30 @@ class ConversationRepository:
             await self.db.commit()
             await self.db.refresh(conversation)
         return conversation
+
+
+    async def get_conversation_with_messages(self, conversation_id: UUID) -> Optional[Conversation]:
+        result = await self.db.execute(
+            select(Conversation)
+            .options(selectinload(Conversation.messages))
+            .where(Conversation.id == conversation_id)
+        )
+        c = result.scalar_one_or_none()
+        
+        if c:
+            if not c.title:
+                user_msgs = [m.content for m in c.messages if m.role == "user"]
+                if user_msgs:
+                    first_query = user_msgs[0]
+                    words = first_query.split()
+                    c.title = " ".join(words[:4]) + ("..." if len(words) > 4 else "")
+                else:
+                    c.title = "New Conversation"
+            if not c.summary:
+                c.summary = "No summary available yet."
+            if c.updated_at is None:
+                c.updated_at = c.created_at
+                
+            c.messages.sort(key=lambda m: m.created_at)
+            
+        return c

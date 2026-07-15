@@ -62,3 +62,7 @@ class ConversationService:
     async def get_summary(self, conversation_id: UUID) -> Optional[str]:
         conv = await self.repository.get_conversation(conversation_id)
         return conv.summary if conv else None
+
+
+    async def get_conversation_history(self, conversation_id: UUID):
+        return await self.repository.get_conversation_with_messages(conversation_id)
