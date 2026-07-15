@@ -26,5 +26,334 @@
     "contexts": [
       "Unsupervised learning finds patterns in unlabeled data. Examples: clustering and association rules."
     ]
+  },
+  {
+    "question": "What is the difference between regression and classification?",
+    "answer": "Regression predicts continuous numerical outcomes, while classification predicts discrete class labels.",
+    "contexts": [
+      "Classification models map inputs to categorical labels. Regression models map inputs to real-valued targets."
+    ]
+  },
+  {
+    "question": "What is overfitting and how can it be prevented?",
+    "answer": "Overfitting occurs when a model learns noise in the training data, degrading performance on unseen test data. It can be prevented using regularization, early stopping, dropout, or adding more training data.",
+    "contexts": [
+      "Overfitting happens when training loss decreases but validation loss increases. Prevention techniques include L1/L2 regularization and data augmentation."
+    ]
+  },
+  {
+    "question": "Explain cross-validation.",
+    "answer": "Cross-validation is a resampling technique used to evaluate machine learning models by partitioning data into multiple folds, training on some folds, and validating on the remaining folds.",
+    "contexts": [
+      "K-fold cross-validation divides the dataset into K subsets. The model trains K times, each time using a different subset as the validation set."
+    ]
+  },
+  {
+    "question": "What is gradient descent?",
+    "answer": "Gradient descent is an optimization algorithm used to minimize a loss function by iteratively updating model weights in the direction of the steepest descent (negative gradient).",
+    "contexts": [
+      "Gradient descent updates weights based on the loss derivative. Learning rate determines step size."
+    ]
+  },
+  {
+    "question": "Describe the difference between L1 and L2 regularization.",
+    "answer": "L1 regularization (Lasso) adds the absolute values of the weights as a penalty, encouraging sparsity (zero weights). L2 regularization (Ridge) adds the squared weights as a penalty, shrinking weights close to zero but not completely.",
+    "contexts": [
+      "L1 adds L1 norm to cost function, enabling feature selection. L2 adds squared L2 norm, keeping weights small but non-zero."
+    ]
+  },
+  {
+    "question": "What is a confusion matrix?",
+    "answer": "A confusion matrix is a table summarizing the performance of a classification model, displaying true positives, true negatives, false positives, and false negatives.",
+    "contexts": [
+      "Confusion matrices evaluate class predictions. Rows represent actual classes, columns represent predicted classes."
+    ]
+  },
+  {
+    "question": "What are precision and recall?",
+    "answer": "Precision measures the proportion of predicted positive cases that are correct, while Recall measures the proportion of actual positive cases that were correctly identified.",
+    "contexts": [
+      "Precision is TP / (TP + FP). Recall is TP / (TP + FN)."
+    ]
+  },
+  {
+    "question": "Explain the F1 score.",
+    "answer": "F1 score is the harmonic mean of precision and recall, providing a balanced metric for evaluating models on imbalanced datasets.",
+    "contexts": [
+      "F1 score combines precision and recall. It is calculated as 2 * (Precision * Recall) / (Precision + Recall)."
+    ]
+  },
+  {
+    "question": "What is the ROC-AUC score?",
+    "answer": "The ROC-AUC score measures the area under the Receiver Operating Characteristic curve, evaluating the model's ability to distinguish between classes across all thresholds.",
+    "contexts": [
+      "ROC plots True Positive Rate against False Positive Rate. AUC ranges from 0.5 (random guess) to 1.0 (perfect classifier)."
+    ]
+  },
+  {
+    "question": "What is random forest?",
+    "answer": "Random forest is an ensemble learning method that constructs multiple decision trees during training and outputs the class mode (classification) or average prediction (regression) of the individual trees.",
+    "contexts": [
+      "Random forest uses bagging and random feature selection to reduce overfitting in decision trees."
+    ]
+  },
+  {
+    "question": "Explain how a support vector machine (SVM) works.",
+    "answer": "A support vector machine finds the optimal hyperplane that maximizes the margin (distance) between different classes of data points in a high-dimensional space.",
+    "contexts": [
+      "SVM classifies data by identifying boundaries. Support vectors are the data points closest to the separating hyperplane."
+    ]
+  },
+  {
+    "question": "What is the purpose of an activation function in a neural network?",
+    "answer": "Activation functions introduce non-linearities into a neural network, enabling the model to learn complex, non-linear relationships from inputs.",
+    "contexts": [
+      "Without activation functions, a multi-layer neural network collapses into a simple linear regression model. Examples: ReLU, Sigmoid, Tanh."
+    ]
+  },
+  {
+    "question": "Explain the vanishing gradient problem.",
+    "answer": "The vanishing gradient problem occurs in deep neural networks when gradients shrink exponentially as they propagate backward to early layers, preventing weights from updating effectively.",
+    "contexts": [
+      "Vanishing gradients are common with Sigmoid or Tanh activations in deep architectures. ReLU mitigates this problem."
+    ]
+  },
+  {
+    "question": "What is dropout in deep learning?",
+    "answer": "Dropout is a regularization technique where randomly selected neurons are ignored during training, forcing the network to learn redundant and robust representation patterns.",
+    "contexts": [
+      "Dropout prevents co-adaptation of features. The dropout rate represents the probability of zeroing a neuron activation."
+    ]
+  },
+  {
+    "question": "What is the difference between batch gradient descent and stochastic gradient descent (SGD)?",
+    "answer": "Batch gradient descent computes gradients using the entire training dataset before updating weights, while SGD computes gradients and updates weights using a single random training sample at a time.",
+    "contexts": [
+      "Batch gradient descent is computationally slow on large data. SGD is faster but introduces noisy updates. Mini-batch gradient descent balances both."
+    ]
+  },
+  {
+    "question": "Explain what a Convolutional Neural Network (CNN) is.",
+    "answer": "A Convolutional Neural Network is a deep learning architecture that uses convolutional layers with kernels to automatically extract spatial hierarchies of features, commonly used for image processing.",
+    "contexts": [
+      "CNNs are specialized for grid-like topology data. Key operations are convolution, pooling, and fully connected classifications."
+    ]
+  },
+  {
+    "question": "What is a Recurrent Neural Network (RNN)?",
+    "answer": "A Recurrent Neural Network is a neural network architecture designed for sequential data, featuring internal loops that allow information to persist across sequential steps.",
+    "contexts": [
+      "RNNs process sequence elements step-by-step, maintaining a hidden state vector. They suffer from vanishing gradients over long sequences."
+    ]
+  },
+  {
+    "question": "Explain the role of Long Short-Term Memory (LSTM) networks.",
+    "answer": "LSTM networks are a specialized type of RNN designed to capture long-term dependencies in sequential data by using gating mechanisms to regulate the flow of information.",
+    "contexts": [
+      "LSTMs regulate cell states using input, forget, and output gates, resolving vanishing gradient limitations of traditional RNNs."
+    ]
+  },
+  {
+    "question": "What is the self-attention mechanism in Transformers?",
+    "answer": "Self-attention computes dynamic weight scores between different words in a sequence, allowing the model to focus on relevant context words regardless of their absolute distance.",
+    "contexts": [
+      "Self-attention queries, keys, and values map token correlations in parallel. Multi-head attention repeats this across multiple sub-spaces."
+    ]
+  },
+  {
+    "question": "Compare BERT and GPT architectures.",
+    "answer": "BERT is an encoder-only, bidirectional model designed to understand context in text, whereas GPT is a decoder-only, autoregressive model designed for generative language modeling.",
+    "contexts": [
+      "BERT is trained on masked language modeling and next sentence prediction. GPT is trained to predict the next word sequentially."
+    ]
+  },
+  {
+    "question": "What is Retrieval-Augmented Generation (RAG)?",
+    "answer": "RAG is a system design that augments LLM generation by retrieving relevant context documents from external knowledge sources and inserting them into the generation prompt.",
+    "contexts": [
+      "RAG combines retrieval systems with parametric LLM knowledge, reducing hallucinations and enabling real-time content updates without fine-tuning."
+    ]
+  },
+  {
+    "question": "What is the role of a vector database in a RAG system?",
+    "answer": "A vector database indexes and stores high-dimensional vector representations (embeddings) of document chunks, supporting fast semantic similarity searches to retrieve relevant context.",
+    "contexts": [
+      "Vector databases calculate cosine similarity or L2 distance over query and document vectors. Examples: PGVector, Pinecone, Milvus."
+    ]
+  },
+  {
+    "question": "Explain hybrid retrieval in the context of RAG.",
+    "answer": "Hybrid retrieval combines semantic vector search (dense embeddings) with keyword search (sparse index search like BM25) to leverage both semantic understanding and exact keyword matching.",
+    "contexts": [
+      "Dense retrieval captures conceptual match. Sparse retrieval captures exact terms like serial numbers or names. They are combined via fusion algorithms."
+    ]
+  },
+  {
+    "question": "What is Reciprocal Rank Fusion (RRF)?",
+    "answer": "RRF is an algorithm that fuses ranked search results from multiple sources (like vector and BM25 search) by summing the reciprocal of their ranks to produce a single, unified rank list.",
+    "contexts": [
+      "RRF calculates scores as Sum(1 / (constant + rank)). It combines different scoring domains without needing score normalization."
+    ]
+  },
+  {
+    "question": "What is a cross-encoder reranker?",
+    "answer": "A cross-encoder reranker is an LLM or classifier that processes the query and retrieved document chunk together to estimate a precise relevance score, improving ranking accuracy at the cost of latency.",
+    "contexts": [
+      "Bi-encoders embed queries and documents independently. Cross-encoders accept query and document in a single prompt, computing deep attention features."
+    ]
+  },
+  {
+    "question": "Explain Parent-Document Retrieval.",
+    "answer": "Parent-document retrieval indexes granular, narrow child chunks for precise vector searches, but retrieves the broader parent document context to supply to the LLM for high-quality generation.",
+    "contexts": [
+      "Vector search performs better on short chunks. LLM generation performs better on complete context paragraphs. Parent-document retrieval bridges this."
+    ]
+  },
+  {
+    "question": "What is semantic caching in RAG?",
+    "answer": "Semantic caching stores previous queries and their answers. Incoming queries are checked for semantic similarity against cached queries; if a match is found, the cached answer is returned immediately.",
+    "contexts": [
+      "Semantic caching uses query embeddings and similarity thresholds to bypass downstream retrieval and generation, reducing costs and response latency."
+    ]
+  },
+  {
+    "question": "What is the purpose of token budgeting in LLM prompts?",
+    "answer": "Token budgeting manages and limits the size of text inputs (context, history, query) to fit within the model's context window limits and control API costs.",
+    "contexts": [
+      "Token budget managers trim document contexts or summarize chat history using tokenizer counts (like tiktoken) to avoid context overflow errors."
+    ]
+  },
+  {
+    "question": "Explain the term 'hallucination' in Large Language Models.",
+    "answer": "Hallucination is when an LLM generates factually incorrect, ungrounded, or fabricated information that is presented as correct.",
+    "contexts": [
+      "Hallucination occurs due to training data bias or lack of external context. Groundedness checks in RAG verify outputs against retrieved sources."
+    ]
+  },
+  {
+    "question": "What is the RAGAS evaluation framework?",
+    "answer": "RAGAS is an evaluation framework that uses an LLM-as-a-judge to measure the performance of RAG components across metrics like faithfulness, answer relevancy, and context precision.",
+    "contexts": [
+      "RAGAS evaluates RAG pipelines without requiring human ground truth, using generated answers, queries, and retrieved contexts."
+    ]
+  },
+  {
+    "question": "Define the 'faithfulness' metric in RAG evaluation.",
+    "answer": "Faithfulness measures the factual groundedness of the generated answer by verifying if all claims in the generated text are supported by the retrieved contexts.",
+    "contexts": [
+      "Faithfulness = Number of claims supported by context / Total number of claims in generated answer."
+    ]
+  },
+  {
+    "question": "Define the 'answer relevancy' metric in RAG evaluation.",
+    "answer": "Answer relevancy measures how well the generated response addresses the user's initial question, penalizing redundancy or irrelevant chitchat.",
+    "contexts": [
+      "Answer relevancy evaluates the semantic match between the generated answer and queries generated back from that answer by an LLM judge."
+    ]
+  },
+  {
+    "question": "What is 'context precision' in RAG evaluation?",
+    "answer": "Context precision measures whether the relevant information retrieved in the context is ranked higher than irrelevant information.",
+    "contexts": [
+      "Context precision penalizes irrelevant items ranked at the top of retrieved search results."
+    ]
+  },
+  {
+    "question": "What is the purpose of query rewriting in advanced RAG?",
+    "answer": "Query rewriting rephrases or expands vague or poorly phrased user questions into search-optimized terms, improving vector retrieval accuracy.",
+    "contexts": [
+      "Query rewriters generate search variations or remove conversational filler from user questions before query execution."
+    ]
+  },
+  {
+    "question": "Explain Corrective RAG (CRAG).",
+    "answer": "CRAG evaluates the quality of retrieved documents. If relevance falls below a threshold, CRAG triggers query rewriting and loops back for re-retrieval, or integrates web search fallback.",
+    "contexts": [
+      "CRAG introduces self-correcting routing gates that evaluate search outputs before passing them to the generator model."
+    ]
+  },
+  {
+    "question": "What is LangGraph and why is it used for LLM orchestration?",
+    "answer": "LangGraph is a library for building stateful, multi-actor LLM applications with support for cyclic execution graphs, making it ideal for self-correcting agent loops.",
+    "contexts": [
+      "Unlike linear chains, LangGraph models states and allows conditional routing edges, supporting loops like retry and self-correction."
+    ]
+  },
+  {
+    "question": "What is the difference between hard and soft margins in SVM?",
+    "answer": "A hard margin SVM requires every data point to be correctly classified outside the margin (no classification errors), while a soft margin SVM allows some classification errors using a slack variable to handle noisy, overlapping data.",
+    "contexts": [
+      "Hard margin SVM is sensitive to outliers and works only on linearly separable data. Soft margin SVM uses parameter C to control margin trade-offs."
+    ]
+  },
+  {
+    "question": "Explain the concept of transfer learning.",
+    "answer": "Transfer learning is a machine learning technique where a model developed for one task is reused as the starting point for a model on a second, related task.",
+    "contexts": [
+      "Transfer learning leverages pre-trained feature extractors (like ImageNet weights or LLM foundation weights) and fine-tunes on smaller datasets."
+    ]
+  },
+  {
+    "question": "What is a token in the context of NLP?",
+    "answer": "A token is a sequence of characters (e.g. a word, subword, or character) that serves as the basic unit of text processing for language models.",
+    "contexts": [
+      "Tokenizers partition text inputs into discrete tokens. Models map tokens to integer token IDs in their vocabulary."
+    ]
+  },
+  {
+    "question": "Explain the difference between stemming and lemmatization.",
+    "answer": "Stemming chops off word suffixes crudely (e.g. 'running' to 'runn'), while Lemmatization maps words to their actual dictionary base form (lemma) using linguistic analysis (e.g. 'better' to 'good').",
+    "contexts": [
+      "Stemming is heuristic-based and fast. Lemmatization is dictionary-based, context-aware, and computationally heavier."
+    ]
+  },
+  {
+    "question": "What is cosine similarity?",
+    "answer": "Cosine similarity measures the cosine of the angle between two vectors in a multi-dimensional space, focusing on vector direction rather than magnitude.",
+    "contexts": [
+      "Cosine similarity is calculated as DotProduct(A, B) / (Norm(A) * Norm(B)). Scores range from -1 to 1."
+    ]
+  },
+  {
+    "question": "Explain the term 'temperature' in LLM text generation.",
+    "answer": "Temperature controls the randomness of generation by scaling logit values before applying Softmax, where lower values make output deterministic and higher values make it creative.",
+    "contexts": [
+      "Temperature values near 0 make models choose the most likely next word. Temperature > 1 flattens token probabilities, increasing diversity."
+    ]
+  },
+  {
+    "question": "What is reinforcement learning from human feedback (RLHF)?",
+    "answer": "RLHF is a method to align LLMs with human preferences by training a reward model on human feedback comparisons and optimizing the LLM using reinforcement learning (PPO).",
+    "contexts": [
+      "RLHF is key to fine-tuning base models into helpful, safe chat agents. It guides outputs using human alignment objectives."
+    ]
+  },
+  {
+    "question": "What is a dense vs a sparse embedding?",
+    "answer": "Dense embeddings are low-dimensional, fully populated vectors capturing semantic meanings, while sparse embeddings are high-dimensional, mostly zero vectors capturing exact term occurrences.",
+    "contexts": [
+      "Dense vectors are typical of models like sentence-transformers. Sparse vectors are typical of vocabulary-based indexes like TF-IDF or BM25."
+    ]
+  },
+  {
+    "question": "Explain the role of Positional Encoding in Transformers.",
+    "answer": "Positional encoding adds vector signals representing token positions to the input embeddings, providing order information since self-attention processes tokens in parallel without sequence order assumptions.",
+    "contexts": [
+      "Transformers lack recurrence or convolutions, making self-attention permutation-invariant. Positional encodings restore sequence order details."
+    ]
+  },
+  {
+    "question": "What is the purpose of learning rate schedules?",
+    "answer": "Learning rate schedules adjust the learning rate during model training to accelerate early learning steps and fine-tune weights closer to convergence in late steps.",
+    "contexts": [
+      "Schedules like linear warmup or cosine annealing decrease learning rates over epochs, preventing gradient explosions and optimizing local minima search."
+    ]
+  },
+  {
+    "question": "What is the purpose of fine-tuning an LLM?",
+    "answer": "Fine-tuning updates a pre-trained LLM's weights on a task-specific dataset, adapting it to follow instructions, mimic formats, or specialize in domain-specific terminology.",
+    "contexts": [
+      "Supervised Fine-Tuning (SFT) adjusts pre-trained weights to fit target distributions. Parameter-Efficient Fine-Tuning (PEFT) like LoRA reduces resource usage."
+    ]
   }
 ]
