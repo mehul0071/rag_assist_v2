@@ -50,5 +50,9 @@ class Settings(BaseSettings):
 
     ENABLE_QUERY_REWRITE: bool = True
 
+    # Redis Semantic Cache
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_SEMANTIC_CACHE_THRESHOLD: float = 0.90
+
 settings = Settings()
 

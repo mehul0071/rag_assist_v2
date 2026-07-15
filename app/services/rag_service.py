@@ -1,7 +1,10 @@
-from typing import Dict, Any, Optional
-from uuid import UUID
 import time
+import asyncio
+import logging
+from uuid import UUID
+from typing import Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+from langchain_core.messages import HumanMessage
 from app.core.retrieval.pipeline import RetrievalPipeline
 from app.core.retrieval.retriever import AdvancedRetriever
 from app.core.ingestion.pipeline import IngestionPipeline
@@ -12,6 +15,13 @@ from app.services.llm_service import LLMService
 from app.core.graph.graph import create_rag_graph
 from app.core.observability.metrics import rag_requests_total, rag_latency
 from app.core.memory.manager import MemoryManager
+from app.core.planner.planner import AdvancedPlanner
+from app.core.cache.semantic_cache import RedisSemanticCache
+from app.core.conversation.repository import ConversationRepository
+from app.core.conversation.repository import ConversationRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 class RAGService:
@@ -26,7 +36,8 @@ class RAGService:
         llm_service: Optional[LLMService] = None,
         retrieval_pipeline: Optional[RetrievalPipeline] = None,
         memory_manager: Optional[Any] = None,
-        planner: Optional[Any] = None
+        planner: Optional[Any] = None,
+        semantic_cache: Optional[Any] = "DEFAULT"
     ):
         self.retriever = retriever
         self.ingestion_pipeline = ingestion_pipeline
@@ -36,8 +47,16 @@ class RAGService:
         self.prompt_manager = prompt_manager or PromptManager()
         self.llm_service = llm_service or LLMService()
         self.memory_manager = memory_manager or MemoryManager()
-        from app.core.planner.planner import AdvancedPlanner
         self.planner = planner or AdvancedPlanner(llm_service=self.llm_service)
+        
+        if semantic_cache == "DEFAULT":
+            embeddings = None
+            if hasattr(self.retriever, "vector_store") and hasattr(self.retriever.vector_store, "embeddings"):
+                embeddings = self.retriever.vector_store.embeddings
+            self.semantic_cache = RedisSemanticCache(embeddings=embeddings)
+        else:
+            self.semantic_cache = semantic_cache
+            
         self.graph = create_rag_graph(self)
 
 
@@ -54,7 +73,21 @@ class RAGService:
         rag_requests_total.inc()
         start_time = time.perf_counter()
         
-        from app.core.conversation.repository import ConversationRepository
+        if self.semantic_cache:
+            cache_hit = await self.semantic_cache.get(question)
+            if cache_hit:
+                cached_answer, cached_sources = cache_hit
+                duration = time.perf_counter() - start_time
+                rag_latency.observe(duration)
+                logger.info("Semantic cache HIT served in %.4fs", duration)
+                return {
+                    "answer": cached_answer,
+                    "sources": cached_sources,
+                    "retrieved_count": len(cached_sources),
+                    "conversation_id": str(conversation_id) if conversation_id else None,
+                    "metadata": {"cached": True, "cache_hit_latency": f"{duration:.4f}s"}
+                }
+
         conversation_repo = ConversationRepository(db)
         conversation_service = ConversationService(repository=conversation_repo)
 
@@ -80,16 +113,22 @@ class RAGService:
             "metadata": {}
         })
 
+        answer = result.get("answer", "Sorry, I couldn't generate a response.")
+        sources = result.get("sources", [])
+
+        if self.semantic_cache and result.get("intent") != "greeting" and result.get("answer"):
+            await self.semantic_cache.set(question, answer, sources)
+
         if conversation_id:
             await conversation_service.add_message(
                 UUID(conversation_id), "user", question
             )
             await conversation_service.add_message(
-                UUID(conversation_id), "assistant", result.get("answer", "")
+                UUID(conversation_id), "assistant", answer
             )
             new_turn = [
                 {"role": "user", "content": question},
-                {"role": "assistant", "content": result.get("answer", "")}
+                {"role": "assistant", "content": answer}
             ]
             await self.memory_manager.user_facts.extract_and_update_facts(
                 UUID(conversation_id), db, new_turn
@@ -99,8 +138,8 @@ class RAGService:
         rag_latency.observe(duration)
 
         return {
-            "answer": result.get("answer", "Sorry, I couldn't generate a response."),
-            "sources": result.get("sources", []),
+            "answer": answer,
+            "sources": sources,
             "retrieved_count": len(result.get("retrieved_docs", [])),
             "conversation_id": str(conversation_id) if conversation_id else None,
             "metadata": result.get("metadata", {})
@@ -115,7 +154,28 @@ class RAGService:
         rag_requests_total.inc()
         start_time = time.perf_counter()
 
-        from app.core.conversation.repository import ConversationRepository
+        if self.semantic_cache:
+            cache_hit = await self.semantic_cache.get(question)
+            if cache_hit:
+                cached_answer, cached_sources = cache_hit
+                duration = time.perf_counter() - start_time
+                rag_latency.observe(duration)
+                logger.info("Semantic cache HIT (streaming) served in %.4fs", duration)
+                
+                words = cached_answer.split(" ")
+                for i, word in enumerate(words):
+                    suffix = " " if i < len(words) - 1 else ""
+                    yield {"token": word + suffix}
+                    await asyncio.sleep(0.015)
+                    
+                yield {
+                    "done": True,
+                    "sources": cached_sources,
+                    "full_answer": cached_answer,
+                    "metadata": {"cached": True, "cache_hit_latency": f"{duration:.4f}s"}
+                }
+                return
+
         conversation_repo = ConversationRepository(db)
         conversation_service = ConversationService(repository=conversation_repo)
 
@@ -149,15 +209,16 @@ class RAGService:
             await conversation_service.add_message(
                 UUID(conversation_id), "user", question
             )
-
-        from langchain_core.messages import HumanMessage
-        import asyncio
+        
         full_answer = ""
         async for chunk in self.llm_service.stream_generate([HumanMessage(content=prompt_value)]):
             if chunk:
                 full_answer += chunk
                 yield {"token": chunk}
                 await asyncio.sleep(0.015)
+
+        if self.semantic_cache and full_answer:
+            await self.semantic_cache.set(question, full_answer, context_data.get("sources", []))
 
         if conversation_id:
             await conversation_service.add_message(
@@ -180,7 +241,8 @@ class RAGService:
             "full_answer": full_answer,
             "metadata": {
                 "retrieved_count": len(retrieved_docs),
-                "used_tokens": context_data.get("estimated_tokens")
+                "used_tokens": context_data.get("estimated_tokens"),
+                "latency_seconds": duration
             }
         }
 

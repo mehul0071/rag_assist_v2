@@ -39,7 +39,8 @@ async def test_rag_query_greeting(mock_db):
         retriever=retriever,
         ingestion_pipeline=ingestion_pipeline,
         llm_service=llm_service,
-        retrieval_pipeline=retrieval_pipeline
+        retrieval_pipeline=retrieval_pipeline,
+        semantic_cache=None
     )
     
     result = await rag_service.query(
@@ -99,7 +100,8 @@ async def test_rag_query_knowledge(mock_db):
         retriever=retriever,
         ingestion_pipeline=ingestion_pipeline,
         llm_service=llm_service,
-        retrieval_pipeline=retrieval_pipeline
+        retrieval_pipeline=retrieval_pipeline,
+        semantic_cache=None
     )
     
     result = await rag_service.query(
@@ -370,7 +372,8 @@ async def test_rag_graph_cyclic_loops(mock_db):
         retriever=retriever,
         ingestion_pipeline=ingestion_pipeline,
         llm_service=llm_service,
-        retrieval_pipeline=retrieval_pipeline
+        retrieval_pipeline=retrieval_pipeline,
+        semantic_cache=None
     )
     
     result = await rag_service.query(
@@ -381,6 +384,67 @@ async def test_rag_graph_cyclic_loops(mock_db):
     
     assert result["answer"] == "The final grounded answer."
     assert mock_rewriter.rewrite.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_redis_semantic_cache():
+    from app.core.cache.semantic_cache import RedisSemanticCache
+    from unittest.mock import MagicMock, AsyncMock
+    import json
+    
+    mock_embeddings = MagicMock()
+    mock_embeddings.aembed_query = AsyncMock(side_effect=[
+        [1.0, 0.0, 0.0],
+        [0.98, 0.1, 0.0],
+        [0.0, 1.0, 0.0]
+    ])
+    
+    mock_redis = MagicMock()
+    mock_redis.ping = MagicMock()
+    
+    db_store = {}
+    
+    def mock_keys(pattern):
+        return list(db_store.keys())
+        
+    def mock_hget(key, field):
+        entry = db_store.get(key, {})
+        return entry.get(field)
+        
+    def mock_hgetall(key):
+        return db_store.get(key, {})
+        
+    def mock_hset(key, mapping):
+        db_store[key] = mapping
+        return 1
+        
+    mock_redis.keys = MagicMock(side_effect=mock_keys)
+    mock_redis.hget = MagicMock(side_effect=mock_hget)
+    mock_redis.hgetall = MagicMock(side_effect=mock_hgetall)
+    mock_redis.hset = MagicMock(side_effect=mock_hset)
+    mock_redis.expire = MagicMock()
+    
+    cache = RedisSemanticCache(embeddings=mock_embeddings)
+    cache.redis_client = mock_redis
+    cache.is_connected = True
+    
+    result1 = await cache.get("What is machine learning?")
+    assert result1 is None
+    
+    sources_data = [{"title": "ML Source", "source": "docs.txt"}]
+    await cache.set("What is machine learning?", "ML is nice.", sources_data)
+    
+    assert len(cache._cached_embeddings) == 1
+    assert len(cache._cached_keys) == 1
+    
+    result2 = await cache.get("Can you tell me what machine learning is?")
+    assert result2 is not None
+    cached_answer, cached_sources = result2
+    assert cached_answer == "ML is nice."
+    assert cached_sources[0]["title"] == "ML Source"
+    
+    result3 = await cache.get("Who is the president?")
+    assert result3 is None
 
 
 @pytest.mark.asyncio

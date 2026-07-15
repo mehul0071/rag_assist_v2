@@ -34,4 +34,4 @@ opentelemetry-api
 opentelemetry-sdk
 opentelemetry-instrumentation-fastapi
 deepeval
-# redispypdf
+redis

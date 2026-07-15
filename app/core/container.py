@@ -12,6 +12,7 @@ from app.core.conversation.repository import ConversationRepository
 from app.core.database import get_db
 from app.core.memory.manager import MemoryManager
 from app.core.planner.planner import AdvancedPlanner
+from app.core.cache.semantic_cache import RedisSemanticCache
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
@@ -27,6 +28,7 @@ class Container:
         self._rag_service = None
         self._memory_manager = None
         self._planner = None
+        self._semantic_cache = None
 
     @property
     def vector_store(self) -> VectorStore:
@@ -84,6 +86,12 @@ class Container:
         return self._planner
 
     @property
+    def semantic_cache(self) -> RedisSemanticCache:
+        if self._semantic_cache is None:
+            self._semantic_cache = RedisSemanticCache(embeddings=self.vector_store.embeddings)
+        return self._semantic_cache
+
+    @property
     def rag_service(self) -> RAGService:
         if self._rag_service is None:
             self._rag_service = RAGService(
@@ -92,7 +100,8 @@ class Container:
                 conversation_service=self.get_conversation_service(),
                 context_builder=self.context_builder,
                 memory_manager=self.memory_manager,
-                planner=self.planner
+                planner=self.planner,
+                semantic_cache=self.semantic_cache
             )
         return self._rag_service
     
