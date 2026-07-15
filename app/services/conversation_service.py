@@ -55,6 +55,10 @@ class ConversationService:
         await self.repository.update_summary(conversation_id, summary)
 
 
+    async def update_title(self, conversation_id: UUID, title: str):
+        await self.repository.update_title(conversation_id, title)
+
+
     async def get_summary(self, conversation_id: UUID) -> Optional[str]:
         conv = await self.repository.get_conversation(conversation_id)
         return conv.summary if conv else None

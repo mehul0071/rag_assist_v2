@@ -126,6 +126,17 @@ class RAGService:
             await conversation_service.add_message(
                 UUID(conversation_id), "assistant", answer
             )
+            
+            conv = await conversation_service.repository.get_conversation(UUID(conversation_id))
+            if conv and not conv.title:
+                from langchain_core.messages import HumanMessage
+                prompt = f"Generate a short, concise title (max 4-5 words) summarizing this user query. Do not use quotes or introductory text. Just return the title.\n\nQuery: {question}"
+                try:
+                    title = await self.llm_service.generate_text([HumanMessage(content=prompt)])
+                    title = title.strip().strip('"').strip("'")
+                    await conversation_service.update_title(UUID(conversation_id), title)
+                except Exception as e:
+                    logger.error(f"Failed to generate conversation title: {e}")
             new_turn = [
                 {"role": "user", "content": question},
                 {"role": "assistant", "content": answer}
@@ -224,6 +235,17 @@ class RAGService:
             await conversation_service.add_message(
                 UUID(conversation_id), "assistant", full_answer
             )
+            
+            conv = await conversation_service.repository.get_conversation(UUID(conversation_id))
+            if conv and not conv.title:
+                from langchain_core.messages import HumanMessage
+                prompt = f"Generate a short, concise title (max 4-5 words) summarizing this user query. Do not use quotes or introductory text. Just return the title.\n\nQuery: {question}"
+                try:
+                    title = await self.llm_service.generate_text([HumanMessage(content=prompt)])
+                    title = title.strip().strip('"').strip("'")
+                    await conversation_service.update_title(UUID(conversation_id), title)
+                except Exception as e:
+                    logger.error(f"Failed to generate conversation title: {e}")
             new_turn = [
                 {"role": "user", "content": question},
                 {"role": "assistant", "content": full_answer}

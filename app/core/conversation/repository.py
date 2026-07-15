@@ -26,7 +26,10 @@ class ConversationRepository:
             .order_by(Conversation.created_at)
         )
         conv = result.scalars().all()
-        print(f"============conv==================={conv}")
+        
+        conv_dicts = [c.__dict__ for c in conv]
+        print(f"============conv==================={conv_dicts}")
+        
         return conv
 
 
@@ -64,6 +67,15 @@ class ConversationRepository:
         conversation = await self.get_conversation(conversation_id)
         if conversation:
             conversation.summary = summary
+            await self.db.commit()
+            await self.db.refresh(conversation)
+        return conversation
+
+
+    async def update_title(self, conversation_id: UUID, title: str):
+        conversation = await self.get_conversation(conversation_id)
+        if conversation:
+            conversation.title = title
             await self.db.commit()
             await self.db.refresh(conversation)
         return conversation
